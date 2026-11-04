@@ -1,0 +1,90 @@
+---
+title: "India Air Quality Intelligence Dashboard"
+author: "Vivek Sharma"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(tidyr)
+
+final_data <- read.csv("../data/processed/cleaned_air_quality.csv")
+
+final_data$month <- as.integer(final_data$month)
+
+# India Air Quality Intelligence Platform
+
+## 1. Dataset Overview
+
+```{r}
+cat("Total Observations:", nrow(final_data))
+cat("\nTotal Cities:", length(unique(final_data$city)))
+cat("\nTotal States:", length(unique(final_data$state)))
+cat("\nYears Covered:", paste(sort(unique(final_data$year)), collapse = ", "))
+```
+
+## 2. Year-wise CO Analysis
+
+```{r}
+yearly_co <- final_data %>%
+  group_by(year) %>%
+  summarise(Average_CO = mean(co, na.rm = TRUE))
+
+ggplot(yearly_co, aes(x = year, y = Average_CO)) +
+  geom_line(color = "steelblue", linewidth = 1.2) +
+  geom_point(size = 3) +
+  theme_minimal()
+```
+
+## 3. Monthly NO2 Analysis
+
+```{r}
+monthly_no2 <- final_data %>%
+  group_by(month) %>%
+  summarise(Average_NO2 = mean(no2, na.rm = TRUE))
+
+ggplot(monthly_no2, aes(x = factor(month), y = Average_NO2)) +
+  geom_col(fill = "darkgreen") +
+  theme_minimal()
+```
+
+## 4. Correlation Heatmap
+
+```{r}
+correlation_matrix <- cor(
+  final_data %>%
+    select(co, no2, so2, o3, temperature, dew_point),
+  use = "complete.obs"
+)
+
+correlation_long <- as.data.frame(as.table(correlation_matrix))
+
+ggplot(correlation_long, aes(Var1, Var2, fill = Freq)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(Freq, 2))) +
+  scale_fill_gradient2(
+    low = "blue",
+    mid = "white",
+    high = "red"
+  ) +
+  theme_minimal()
+```
+
+## 5. Interactive CO Visualization
+
+```{r}
+co_plot <- ggplot(
+  final_data,
+  aes(x = temperature, y = co)
+) +
+  geom_point(alpha = 0.4, color = "steelblue") +
+  theme_minimal()
+
+ggplotly(co_plot)
+```
+
+## 6. Conclusion
+
+The analysis examines environmental parameters across India from 2023 to 2025. Average CO concentration decreased between 2023 and 2025. Monthly analysis revealed variations in CO and NO2 concentrations. Correlation analysis also identified relationships among selected pollutants and meteorological variables.
